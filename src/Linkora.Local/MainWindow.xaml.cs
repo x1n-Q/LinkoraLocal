@@ -356,8 +356,11 @@ public partial class MainWindow : Window, IDisposable
         UpdatePublishButton();
     }
 
-    private void HostnameLabelTextBox_TextChanged(object sender, TextChangedEventArgs e) =>
+    private void HostnameLabelTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
         UpdateHostnamePreview();
+        UpdatePublishButton();
+    }
 
     private void DomainPoolCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
