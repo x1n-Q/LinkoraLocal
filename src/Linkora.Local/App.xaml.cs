@@ -32,10 +32,23 @@ public partial class App : System.Windows.Application, IDisposable
             RenderOptions.ProcessRenderMode =
                 System.Windows.Interop.RenderMode.SoftwareOnly;
         }
+        var startInBackground = e.Args.Any(
+            argument => argument.Equals("--background", StringComparison.OrdinalIgnoreCase));
         var window = new MainWindow();
         MainWindow = window;
         CreateTrayIcon(window);
-        window.Show();
+        if (startInBackground)
+        {
+            window.ShowActivated = false;
+            window.ShowInTaskbar = false;
+            window.WindowState = WindowState.Minimized;
+            window.Show();
+            window.Hide();
+        }
+        else
+        {
+            window.Show();
+        }
     }
 
     private void CreateTrayIcon(MainWindow window)
@@ -59,6 +72,7 @@ public partial class App : System.Windows.Application, IDisposable
 
     private static void ShowWindow(MainWindow window)
     {
+        window.ShowInTaskbar = true;
         window.Show();
         if (window.WindowState == WindowState.Minimized)
         {
@@ -70,7 +84,7 @@ public partial class App : System.Windows.Application, IDisposable
     public async Task QuitAsync(MainWindow window)
     {
         IsQuitting = true;
-        await window.StopPublishingAsync();
+        await window.StopPublishingAsync(disableAlwaysOn: false);
         _trayIcon?.Dispose();
         _trayIcon = null;
         window.Close();

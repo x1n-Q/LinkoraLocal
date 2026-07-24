@@ -44,7 +44,23 @@ security and data-handling model.
 - Secure `cloudflared` process management
 - Public edge health check
 - System tray operation after the editor closes
+- Optional start-with-Windows and automatic managed-tunnel reconnect
 - Immediate stop-sharing and device-disconnect controls
+
+## Always-on mode
+
+Enable **Always on while this PC is on** before publishing. Linkora Local then:
+
+- starts hidden after the Windows user signs in;
+- waits for the saved loopback web service to become reachable;
+- requests a fresh, short-lived tunnel credential from Linkora;
+- restores the last published managed-tunnel hostname; and
+- retries automatically if the local service or connector starts late.
+
+The computer and the local website process must both be running. Linkora Local
+cannot keep a home-hosted site online while the computer is shut down. Configure
+the website itself as a Windows startup task or service if it must return after
+a reboot.
 
 ## Requirements
 

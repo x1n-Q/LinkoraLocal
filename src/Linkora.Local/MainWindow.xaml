@@ -383,6 +383,35 @@
                              FontSize="10" />
                 </StackPanel>
 
+                <Border Margin="0,18,0,0"
+                        Padding="14"
+                        CornerRadius="8"
+                        Background="#07101C"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,14,0">
+                      <TextBlock Text="Always on while this PC is on"
+                                 FontWeight="SemiBold" />
+                      <TextBlock Margin="0,5,0,0"
+                                 Text="Start with Windows and restore this hostname after sign-in. Your local website must also be running."
+                                 Foreground="{StaticResource MutedBrush}"
+                                 TextWrapping="Wrap"
+                                 FontSize="10" />
+                    </StackPanel>
+                    <CheckBox x:Name="AlwaysOnCheckBox"
+                              Grid.Column="1"
+                              VerticalAlignment="Center"
+                              AutomationProperties.Name="Always on while this PC is on"
+                              Checked="AlwaysOnCheckBox_Changed"
+                              Unchecked="AlwaysOnCheckBox_Changed" />
+                  </Grid>
+                </Border>
+
                 <Border Margin="0,18,0,16"
                         Padding="14"
                         CornerRadius="8"

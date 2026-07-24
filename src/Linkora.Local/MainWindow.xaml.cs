@@ -26,6 +26,8 @@ public partial class MainWindow : Window, IDisposable
     private readonly ObservableCollection<Subdomain> _subdomains = [];
     private readonly ObservableCollection<DomainPool> _pools = [];
     private readonly DispatcherTimer _devicePollTimer;
+    private readonly DispatcherTimer _resumeTimer;
+    private readonly AppPreferences _preferences;
     private string? _deviceCode;
     private string? _verificationUrl;
     private string? _publishedUrl;
@@ -33,10 +35,16 @@ public partial class MainWindow : Window, IDisposable
     private WorkspaceData? _workspace;
     private bool _busy;
     private bool _disposed;
+    private bool _loadingPreferences;
+    private bool _resumeInProgress;
 
     public MainWindow()
     {
         InitializeComponent();
+        _preferences = AppPreferencesStore.Read();
+        _loadingPreferences = true;
+        AlwaysOnCheckBox.IsChecked = _preferences.AlwaysOnEnabled;
+        _loadingPreferences = false;
         SourceInitialized += (_, _) => EnableDarkTitleBar();
         LocalServicesList.ItemsSource = _localServices;
         ExistingHostnameCombo.ItemsSource = _subdomains;
@@ -48,6 +56,11 @@ public partial class MainWindow : Window, IDisposable
             Interval = TimeSpan.FromSeconds(3)
         };
         _devicePollTimer.Tick += DevicePollTimer_Tick;
+        _resumeTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(20)
+        };
+        _resumeTimer.Tick += ResumeTimer_Tick;
     }
 
     [DllImport("dwmapi.dll", PreserveSig = true)]
@@ -91,11 +104,23 @@ public partial class MainWindow : Window, IDisposable
             {
                 await RestoreSessionAsync();
             }
-            catch
+            catch (LinkoraApiException exception)
+                when (exception.StatusCode is HttpStatusCode.Unauthorized
+                      or HttpStatusCode.Forbidden)
             {
                 CredentialStore.Delete();
                 _api.SetAccessToken(null);
                 ShowSignedOutState();
+            }
+            catch (Exception exception)
+            {
+                ShowSignedOutState();
+                SetStatus(
+                    $"Waiting for Linkora before restoring the session: {exception.Message}");
+                if (_preferences.AlwaysOnEnabled)
+                {
+                    _resumeTimer.Start();
+                }
             }
         }
         else
@@ -104,6 +129,15 @@ public partial class MainWindow : Window, IDisposable
         }
 
         await RefreshServicesAsync();
+        if (_preferences.AlwaysOnEnabled && _session is not null)
+        {
+            await TryRestorePublishingAsync();
+            if (!_cloudflared.IsRunning)
+            {
+                _resumeTimer.Start();
+            }
+        }
+
     }
 
     private void Window_Closing(object? sender, CancelEventArgs e)
@@ -134,6 +168,7 @@ public partial class MainWindow : Window, IDisposable
 
     private void ShowSignedOutState()
     {
+        _resumeTimer.Stop();
         _session = null;
         _workspace = null;
         AccountStatusText.Text = "Not connected";
@@ -329,6 +364,54 @@ public partial class MainWindow : Window, IDisposable
         SetStatus("This computer has been disconnected.");
     }
 
+    private async void AlwaysOnCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loadingPreferences)
+        {
+            return;
+        }
+
+        var enabled = AlwaysOnCheckBox.IsChecked == true;
+        try
+        {
+            StartupRegistration.SetEnabled(enabled);
+            _preferences.AlwaysOnEnabled = enabled;
+
+            if (enabled
+                && LocalServicesList.SelectedItem is LocalService service
+                && !string.IsNullOrWhiteSpace(_publishedUrl)
+                && Uri.TryCreate(_publishedUrl, UriKind.Absolute, out var publishedUri))
+            {
+                _preferences.Hostname = publishedUri.Host;
+                _preferences.ServiceUrl = service.ServiceUrl;
+            }
+
+            AppPreferencesStore.Save(_preferences);
+            if (enabled)
+            {
+                _resumeTimer.Start();
+                await TryRestorePublishingAsync();
+                SetStatus(
+                    _cloudflared.IsRunning
+                        ? "Always-on publishing is enabled."
+                        : "Always-on publishing is enabled and will reconnect after this service is published.",
+                    _cloudflared.IsRunning);
+            }
+            else
+            {
+                _resumeTimer.Stop();
+                SetStatus("Automatic startup and reconnect are disabled.", _cloudflared.IsRunning);
+            }
+        }
+        catch (Exception exception)
+        {
+            _loadingPreferences = true;
+            AlwaysOnCheckBox.IsChecked = !enabled;
+            _loadingPreferences = false;
+            SetStatus($"Always-on setup failed: {exception.Message}", false, true);
+        }
+    }
+
     private void LocalServicesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         SelectedServiceText.Text = LocalServicesList.SelectedItem is LocalService service
@@ -459,6 +542,13 @@ public partial class MainWindow : Window, IDisposable
             SetStatus("Starting the encrypted connector…");
             await _cloudflared.StartAsync(token);
             _publishedUrl = $"https://{hostname}";
+            if (_preferences.AlwaysOnEnabled)
+            {
+                _preferences.Hostname = hostname;
+                _preferences.ServiceUrl = service.ServiceUrl;
+                AppPreferencesStore.Save(_preferences);
+                _resumeTimer.Start();
+            }
             PublishedUrlText.Text = _publishedUrl;
             PublishedPanel.Visibility = Visibility.Visible;
             PublishButton.Visibility = Visibility.Collapsed;
@@ -516,8 +606,19 @@ public partial class MainWindow : Window, IDisposable
     private async void StopPublishingButton_Click(object sender, RoutedEventArgs e) =>
         await StopPublishingAsync();
 
-    public async Task StopPublishingAsync()
+    public async Task StopPublishingAsync(bool disableAlwaysOn = true)
     {
+        if (disableAlwaysOn && _preferences.AlwaysOnEnabled)
+        {
+            _resumeTimer.Stop();
+            _preferences.AlwaysOnEnabled = false;
+            AppPreferencesStore.Save(_preferences);
+            StartupRegistration.SetEnabled(false);
+            _loadingPreferences = true;
+            AlwaysOnCheckBox.IsChecked = false;
+            _loadingPreferences = false;
+        }
+
         await _cloudflared.StopAsync();
         await Dispatcher.InvokeAsync(() =>
         {
@@ -527,6 +628,174 @@ public partial class MainWindow : Window, IDisposable
             SetStatus("Local publishing stopped.");
             UpdatePublishButton();
         });
+    }
+
+    private async void ResumeTimer_Tick(object? sender, EventArgs e) =>
+        await TryRestorePublishingAsync();
+
+    private async Task TryRestorePublishingAsync()
+    {
+        if (!_preferences.AlwaysOnEnabled
+            || _resumeInProgress
+            || _busy
+            || _cloudflared.IsRunning
+            || string.IsNullOrWhiteSpace(_preferences.Hostname)
+            || string.IsNullOrWhiteSpace(_preferences.ServiceUrl))
+        {
+            return;
+        }
+
+        _resumeInProgress = true;
+        try
+        {
+            if (_session is null)
+            {
+                SetStatus("Restoring the Linkora device session…");
+                await RestoreSessionAsync();
+            }
+
+            if (!TryGetSafeLoopbackServiceUrl(
+                    _preferences.ServiceUrl,
+                    out var localServiceUrl))
+            {
+                _resumeTimer.Stop();
+                SetStatus(
+                    "The saved always-on service is not a safe loopback HTTP address.",
+                    false,
+                    true);
+                return;
+            }
+            if (!await IsLocalServiceAvailableAsync(localServiceUrl))
+            {
+                SetStatus(
+                    $"Waiting for {localServiceUrl} before restoring the hostname.");
+                return;
+            }
+
+            var subdomain = _subdomains.FirstOrDefault(item =>
+                item.Hostname.Equals(
+                    _preferences.Hostname,
+                    StringComparison.OrdinalIgnoreCase));
+            if (subdomain is null)
+            {
+                _resumeTimer.Stop();
+                SetStatus(
+                    "The saved always-on hostname is no longer available in this account.",
+                    false,
+                    true);
+                return;
+            }
+            if (subdomain.ConnectionType != "MANAGED_TUNNEL")
+            {
+                _resumeTimer.Stop();
+                SetStatus(
+                    "The saved hostname is not configured for a managed tunnel.",
+                    false,
+                    true);
+                return;
+            }
+
+            SetStatus("Restoring the always-on encrypted connector…");
+            string token;
+            if (subdomain.ManagedTunnel is null)
+            {
+                var credential = await _api.CreateTunnelAsync(
+                    subdomain.Id,
+                    localServiceUrl);
+                token = credential.Token ?? "";
+            }
+            else
+            {
+                var credential = await _api.ConnectTunnelAsync(
+                    subdomain.ManagedTunnel.Id,
+                    localServiceUrl);
+                token = credential.TunnelToken ?? "";
+            }
+
+            await _cloudflared.StartAsync(token);
+            _publishedUrl = $"https://{subdomain.Hostname}";
+            PublishedUrlText.Text = _publishedUrl;
+            PublishedPanel.Visibility = Visibility.Visible;
+            PublishButton.Visibility = Visibility.Collapsed;
+
+            var matchingService = _localServices.FirstOrDefault(item =>
+                item.ServiceUrl.Equals(
+                    localServiceUrl,
+                    StringComparison.OrdinalIgnoreCase));
+            if (matchingService is not null)
+            {
+                LocalServicesList.SelectedItem = matchingService;
+            }
+            ExistingHostnameCombo.SelectedItem = subdomain;
+            SetStatus($"{_publishedUrl} was restored automatically.", true);
+            _ = VerifyPublishedUrlAsync(_publishedUrl);
+        }
+        catch (LinkoraApiException exception)
+            when (exception.StatusCode is HttpStatusCode.Unauthorized
+                  or HttpStatusCode.Forbidden)
+        {
+            _resumeTimer.Stop();
+            CredentialStore.Delete();
+            _api.SetAccessToken(null);
+            ShowSignedOutState();
+            SetStatus(
+                "The saved Linkora session expired. Open the app and connect the account again.",
+                false,
+                true);
+        }
+        catch (Exception exception)
+        {
+            SetStatus(
+                $"Automatic reconnect is waiting to retry: {exception.Message}",
+                false,
+                true);
+        }
+        finally
+        {
+            _resumeInProgress = false;
+            UpdatePublishButton();
+        }
+    }
+
+    private static async Task<bool> IsLocalServiceAvailableAsync(string serviceUrl)
+    {
+        try
+        {
+            using var handler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+            };
+            using var client = new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(2)
+            };
+            using var response = await client.GetAsync(
+                serviceUrl,
+                HttpCompletionOption.ResponseHeadersRead);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool TryGetSafeLoopbackServiceUrl(
+        string value,
+        out string normalizedUrl)
+    {
+        normalizedUrl = "";
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+            || !uri.IsLoopback
+            || !string.IsNullOrEmpty(uri.UserInfo)
+            || uri.Port is < 1024 or > 65535)
+        {
+            return false;
+        }
+
+        normalizedUrl = uri.GetLeftPart(UriPartial.Authority);
+        return true;
     }
 
     private void HandleCloudflaredOutput(string line)
@@ -574,6 +843,7 @@ public partial class MainWindow : Window, IDisposable
         }
         _disposed = true;
         _devicePollTimer.Stop();
+        _resumeTimer.Stop();
         _api.Dispose();
         _discovery.Dispose();
         _cloudflared.DisposeAsync().AsTask().GetAwaiter().GetResult();
