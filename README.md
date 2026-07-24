@@ -1,20 +1,45 @@
 # Linkora Local
 
-Linkora Local is an open-source Windows application that finds local web
-services and publishes one through a Linkora managed tunnel.
+[![Build](https://github.com/x1n-Q/LinkoraLocal/actions/workflows/build.yml/badge.svg)](https://github.com/x1n-Q/LinkoraLocal/actions/workflows/build.yml)
+[![CodeQL](https://github.com/x1n-Q/LinkoraLocal/actions/workflows/codeql.yml/badge.svg)](https://github.com/x1n-Q/LinkoraLocal/actions/workflows/codeql.yml)
+[![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-32d8ff)](https://github.com/x1n-Q/LinkoraLocal/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-c9ff54.svg)](LICENSE)
+
+Publish a localhost website through a short Linkora hostname—without router
+port forwarding or a public inbound firewall rule.
+
+Linkora Local is an open-source Windows application that discovers local HTTP
+services, lets you select one, and connects it through a Linkora-managed
+Cloudflare Tunnel.
+
+**[Download Linkora Local 0.1.0 for Windows](https://github.com/x1n-Q/LinkoraLocal/releases/download/v0.1.0/Linkora-Local-Windows-x64.exe)**
+· [Release notes and checksum](https://github.com/x1n-Q/LinkoraLocal/releases/tag/v0.1.0)
+· [Linkora website](https://linkora.top/#linkora-local)
+· [Manual tunnel guide](https://linkora.top/guides/cloudflare-tunnel)
+
+> **Windows preview:** the current installer is not yet code-signed by
+> Linkora. Windows SmartScreen may display an **Unknown publisher** warning.
+> Verify the published SHA-256 checksum or build the app from this repository
+> before installing.
+
+## How it works
 
 ```text
-LocalHost found
-
-Portfolio
-localhost:3318
-
-[ Publish securely ]
+Localhost found        Select a hostname       Publish securely
+127.0.0.1:3318    →    portfolio.nx1.lol  →    Cloudflare edge
 ```
 
-It is designed for previews and development. Publishing does **not** turn a
-local process into a permanent production deployment: the public hostname is
-reachable only while the local application and Linkora Local are running.
+1. Install and open Linkora Local on Windows.
+2. Start your website on `localhost`.
+3. Choose **Connect account**. Approval happens on `linkora.top` in your
+   browser; your password never enters the desktop app.
+4. Select the detected local service and an available Linkora hostname.
+5. Choose **Publish securely**.
+
+The public hostname remains reachable while the local website, Linkora Local,
+and the computer are running. This is intended for development, previews, home
+labs, and self-hosted services—not as a replacement for an always-running
+production server.
 
 ## Trust model
 
@@ -65,15 +90,34 @@ a reboot.
 ## Requirements
 
 - Windows 10 version 1809 or later, or Windows 11
+- x64 processor
 - A Linkora member account
 - An available managed-tunnel hostname slot
-- `cloudflared.exe`
 
-Release packages are expected to include a pinned official `cloudflared`
-binary. Development builds also search the normal PATH and standard Program
-Files locations.
+The GitHub Setup release is self-contained: it includes the required .NET
+runtime and an official Cloudflare-signed `cloudflared.exe`. Development builds
+also search `PATH` and the standard Program Files locations.
 
-## Build
+## Verify the download
+
+The v0.1.0 Windows installer has this SHA-256 digest:
+
+```text
+c8d6b4e24348ee24da7df3465a7129c8d3ff17ecc5d9d14c95a8a7922acb55d3
+```
+
+Verify it in PowerShell:
+
+```powershell
+Get-FileHash .\Linkora-Local-Windows-x64.exe -Algorithm SHA256
+```
+
+The release also includes the
+[checksum file](https://github.com/x1n-Q/LinkoraLocal/releases/download/v0.1.0/Linkora-Local-Windows-x64.exe.sha256)
+and an
+[SPDX SBOM](https://github.com/x1n-Q/LinkoraLocal/releases/download/v0.1.0/Linkora-Local-Windows-x64.sbom.spdx.json).
+
+## Build from source
 
 Install the .NET 8 SDK, then run:
 
@@ -85,10 +129,13 @@ The production API is used by default. To use a local API:
 
 ```powershell
 $env:LINKORA_API_URL = "http://127.0.0.1:4000"
-dotnet run --project src\Linkora.Local\Linkora.Local.csproj
+dotnet run --project src\Linkora.Local\Linkora.Local.csproj -c Debug
 ```
 
-Run the source and secret checks:
+The API override is available only in Debug builds. Release builds are pinned
+to `https://api.linkora.top`.
+
+Run the build, analyzer, and source-secret checks:
 
 ```powershell
 .\scripts\Test-Source.ps1
@@ -96,8 +143,8 @@ Run the source and secret checks:
 
 ## Windows Setup release
 
-The GitHub release is a self-contained Windows 10/11 x64 Setup executable. It
-does not require a separate .NET installation and bundles an official,
+The release script creates a self-contained Windows 10/11 x64 Setup executable.
+It does not require a separate .NET installation and bundles an official,
 Authenticode-signed `cloudflared.exe`.
 
 Install Inno Setup 6, install the official Cloudflare connector, then build:
@@ -116,6 +163,12 @@ The release artifacts are written to `artifacts/`:
 
 The build refuses an unsigned or non-Cloudflare connector and scans the source,
 application executable, and final installer for secret-like material.
+
+## Contributing
+
+Bug reports and focused pull requests are welcome. Read
+[CONTRIBUTING.md](CONTRIBUTING.md) before submitting a change. Report security
+issues privately as described in [SECURITY.md](SECURITY.md).
 
 ## Microsoft Store package
 
