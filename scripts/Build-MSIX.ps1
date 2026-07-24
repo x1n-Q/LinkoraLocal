@@ -1,7 +1,15 @@
 param(
   [Parameter(Mandatory = $true)]
+  [ValidatePattern("^[A-Za-z0-9.-]+$")]
+  [string]$IdentityName,
+
+  [Parameter(Mandatory = $true)]
   [ValidatePattern("^CN=.+")]
   [string]$Publisher,
+
+  [Parameter(Mandatory = $true)]
+  [ValidateLength(1, 50)]
+  [string]$PublisherDisplayName,
 
   [Parameter(Mandatory = $true)]
   [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
@@ -46,7 +54,19 @@ $assetDirectory = Join-Path $stagingDirectory "Assets"
 & (Join-Path $PSScriptRoot "New-Assets.ps1") -OutputDirectory $assetDirectory
 
 $manifestTemplate = Get-Content -Raw (Join-Path $repositoryRoot "packaging\AppxManifest.xml.template")
-$manifest = $manifestTemplate.Replace("__PUBLISHER__", $Publisher).Replace("__VERSION__", $Version)
+$manifest = $manifestTemplate.Replace(
+  "__IDENTITY_NAME__",
+  [System.Security.SecurityElement]::Escape($IdentityName))
+$manifest = $manifest.Replace(
+  "__PUBLISHER__",
+  [System.Security.SecurityElement]::Escape($Publisher))
+$manifest = $manifest.Replace(
+  "__PUBLISHER_DISPLAY_NAME__",
+  [System.Security.SecurityElement]::Escape($PublisherDisplayName))
+$manifest = $manifest.Replace("__VERSION__", $Version)
+if ($manifest -match "__[A-Z_]+__") {
+  throw "The generated package manifest contains an unresolved template value."
+}
 [System.IO.File]::WriteAllText(
   (Join-Path $stagingDirectory "AppxManifest.xml"),
   $manifest,

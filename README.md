@@ -159,20 +159,22 @@ issues privately as described in [SECURITY.md](SECURITY.md).
 ## Microsoft Store package
 
 1. Reserve **Linkora Local** in Microsoft Partner Center.
-2. Replace the placeholder publisher with the exact Partner Center publisher
-   identity.
+2. Copy the package name, publisher, and publisher display name exactly from
+   the Partner Center **Product identity** page.
 3. Supply a trusted official `cloudflared.exe`.
 4. Build the MSIX:
 
 ```powershell
 .\scripts\Build-MSIX.ps1 `
+  -IdentityName "YOUR_PARTNER_CENTER_PACKAGE_NAME" `
   -Publisher "CN=YOUR_PARTNER_CENTER_PUBLISHER" `
+  -PublisherDisplayName "YOUR_PARTNER_CENTER_DISPLAY_NAME" `
   -CloudflaredPath "C:\Program Files (x86)\cloudflared\cloudflared.exe"
 ```
 
 The package is written to `artifacts/`. Partner Center signs the accepted Store
-package. A locally installed test package must be signed with a certificate
-trusted by the test computer.
+package. Direct sideloading requires a matching certificate trusted by the
+test computer.
 
 ## Linkora API integration
 
