@@ -16,10 +16,14 @@ internal sealed class LinkoraApiClient : IDisposable
 
     public LinkoraApiClient()
     {
+#if DEBUG
         var configured = Environment.GetEnvironmentVariable("LINKORA_API_URL");
         var baseUrl = string.IsNullOrWhiteSpace(configured)
             ? "https://api.linkora.top"
             : configured.TrimEnd('/');
+#else
+        const string baseUrl = "https://api.linkora.top";
+#endif
         _http = new HttpClient(new SocketsHttpHandler
         {
             AutomaticDecompression = DecompressionMethods.All,

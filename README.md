@@ -94,6 +94,29 @@ Run the source and secret checks:
 .\scripts\Test-Source.ps1
 ```
 
+## Windows Setup release
+
+The GitHub release is a self-contained Windows 10/11 x64 Setup executable. It
+does not require a separate .NET installation and bundles an official,
+Authenticode-signed `cloudflared.exe`.
+
+Install Inno Setup 6, install the official Cloudflare connector, then build:
+
+```powershell
+winget install --id JRSoftware.InnoSetup --exact
+winget install --id Cloudflare.cloudflared --exact
+.\scripts\Build-Installer.ps1
+```
+
+The release artifacts are written to `artifacts/`:
+
+- `Linkora-Local-Windows-x64.exe`
+- `Linkora-Local-Windows-x64.exe.sha256`
+- `Linkora-Local-Windows-x64.sbom.spdx.json`
+
+The build refuses an unsigned or non-Cloudflare connector and scans the source,
+application executable, and final installer for secret-like material.
+
 ## Microsoft Store package
 
 1. Reserve **Linkora Local** in Microsoft Partner Center.

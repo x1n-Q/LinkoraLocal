@@ -281,6 +281,11 @@ public partial class MainWindow : Window, IDisposable
         try
         {
             var authorization = await _api.StartDeviceAsync();
+            if (!IsTrustedLinkoraUrl(authorization.VerificationUrl))
+            {
+                throw new InvalidOperationException(
+                    "Linkora returned an invalid browser authorization address.");
+            }
             _deviceCode = authorization.DeviceCode;
             _verificationUrl = authorization.VerificationUrl;
             DeviceCodeText.Text = authorization.UserCode;
@@ -820,6 +825,12 @@ public partial class MainWindow : Window, IDisposable
     {
         Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
     }
+
+    private static bool IsTrustedLinkoraUrl(string value) =>
+        Uri.TryCreate(value, UriKind.Absolute, out var uri)
+        && uri.Scheme == Uri.UriSchemeHttps
+        && (uri.Host.Equals("linkora.top", StringComparison.OrdinalIgnoreCase)
+            || uri.Host.EndsWith(".linkora.top", StringComparison.OrdinalIgnoreCase));
 
     private void SetStatus(string message, bool healthy = false, bool error = false)
     {
