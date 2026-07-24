@@ -389,15 +389,20 @@
                         Background="#162012"
                         BorderBrush="#3E5B24"
                         BorderThickness="1">
-                  <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="✓"
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="&#x2713;"
                                Margin="0,0,10,0"
                                Foreground="{StaticResource LimeBrush}"
                                FontWeight="Bold" />
-                    <TextBlock Text="Recommended: managed tunnel with no open inbound ports."
+                    <TextBlock Grid.Column="1"
+                               Text="Recommended: managed tunnel with no open inbound ports."
                                Foreground="#C8E8A2"
                                TextWrapping="Wrap" />
-                  </StackPanel>
+                  </Grid>
                 </Border>
 
                 <Button x:Name="PublishButton"
