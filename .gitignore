@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+.vs/
+.idea/
+artifacts/
+src/Linkora.Local/tools/cloudflared.exe
+*.user
+*.suo
+*.pfx
+*.cer
+*.msix
+*.msixbundle
