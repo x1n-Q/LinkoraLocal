@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Linkora.Local</AssemblyName>
+    <RootNamespace>Linkora.Local</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>0.1.0</Version>
+    <Authors>Daniel Depaor and Linkora contributors</Authors>
+    <Description>Securely publish localhost services with a Linkora hostname.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="tools\cloudflared.exe"
+          Condition="Exists('tools\cloudflared.exe')"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
