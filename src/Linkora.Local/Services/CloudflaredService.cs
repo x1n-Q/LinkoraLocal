@@ -30,30 +30,42 @@ internal sealed class CloudflaredService : IAsyncDisposable
             RedirectStandardError = true
         };
         startInfo.ArgumentList.Add("tunnel");
-        startInfo.ArgumentList.Add("run");
         startInfo.ArgumentList.Add("--no-autoupdate");
+        startInfo.ArgumentList.Add("run");
         startInfo.ArgumentList.Add("--token");
         startInfo.ArgumentList.Add(tunnelToken);
+
+        var recentOutput = new Queue<string>();
+        var outputLock = new object();
+        void RelayOutput(string? line)
+        {
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                return;
+            }
+
+            var sanitized = line.Replace(
+                tunnelToken,
+                "[redacted]",
+                StringComparison.Ordinal);
+            lock (outputLock)
+            {
+                if (recentOutput.Count == 8)
+                {
+                    recentOutput.Dequeue();
+                }
+                recentOutput.Enqueue(sanitized);
+            }
+            OutputReceived?.Invoke(sanitized);
+        }
 
         _process = new Process
         {
             StartInfo = startInfo,
             EnableRaisingEvents = true
         };
-        _process.OutputDataReceived += (_, eventArgs) =>
-        {
-            if (!string.IsNullOrWhiteSpace(eventArgs.Data))
-            {
-                OutputReceived?.Invoke(eventArgs.Data);
-            }
-        };
-        _process.ErrorDataReceived += (_, eventArgs) =>
-        {
-            if (!string.IsNullOrWhiteSpace(eventArgs.Data))
-            {
-                OutputReceived?.Invoke(eventArgs.Data);
-            }
-        };
+        _process.OutputDataReceived += (_, eventArgs) => RelayOutput(eventArgs.Data);
+        _process.ErrorDataReceived += (_, eventArgs) => RelayOutput(eventArgs.Data);
         _process.Exited += (_, _) => OutputReceived?.Invoke("Tunnel connector stopped.");
 
         if (!_process.Start())
@@ -66,8 +78,19 @@ internal sealed class CloudflaredService : IAsyncDisposable
         await Task.Delay(TimeSpan.FromSeconds(1.5), cancellationToken);
         if (_process.HasExited)
         {
+            _process.WaitForExit();
+            string? detail;
+            lock (outputLock)
+            {
+                detail = recentOutput.FirstOrDefault(line =>
+                             line.Contains("error", StringComparison.OrdinalIgnoreCase)
+                             || line.Contains("incorrect usage", StringComparison.OrdinalIgnoreCase)
+                             || line.Contains("failed", StringComparison.OrdinalIgnoreCase))
+                         ?? recentOutput.LastOrDefault();
+            }
             throw new InvalidOperationException(
-                $"cloudflared stopped unexpectedly with exit code {_process.ExitCode}.");
+                $"cloudflared stopped unexpectedly with exit code {_process.ExitCode}."
+                + (string.IsNullOrWhiteSpace(detail) ? "" : $" {detail}"));
         }
     }
 
