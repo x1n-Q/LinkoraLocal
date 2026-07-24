@@ -20,11 +20,37 @@
     <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextColor}" />
     <SolidColorBrush x:Key="MutedBrush" Color="{StaticResource MutedColor}" />
 
+    <DrawingImage x:Key="AppIcon">
+      <DrawingImage.Drawing>
+        <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
+          <GeometryDrawing Brush="#07101C" Geometry="M0,0 H32 V32 H0 Z" />
+          <GeometryDrawing Geometry="M8,6 V23 H22">
+            <GeometryDrawing.Pen>
+              <Pen Brush="{StaticResource CyanBrush}" Thickness="3"
+                   StartLineCap="Square" EndLineCap="Square" LineJoin="Miter" />
+            </GeometryDrawing.Pen>
+          </GeometryDrawing>
+          <GeometryDrawing Brush="#07101C">
+            <GeometryDrawing.Geometry>
+              <EllipseGeometry Center="23,23" RadiusX="4" RadiusY="4" />
+            </GeometryDrawing.Geometry>
+            <GeometryDrawing.Pen>
+              <Pen Brush="{StaticResource LimeBrush}" Thickness="2" />
+            </GeometryDrawing.Pen>
+          </GeometryDrawing>
+        </DrawingGroup>
+      </DrawingImage.Drawing>
+    </DrawingImage>
+
     <Style TargetType="Window">
       <Setter Property="Background" Value="{StaticResource CanvasBrush}" />
       <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
       <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
       <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+    </Style>
+
+    <Style TargetType="TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
     </Style>
 
     <Style TargetType="Button">
@@ -84,6 +110,12 @@
       <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
       <Setter Property="Padding" Value="10,8" />
       <Setter Property="MinHeight" Value="42" />
+    </Style>
+
+    <Style TargetType="ComboBoxItem">
+      <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+      <Setter Property="Padding" Value="10,8" />
     </Style>
 
     <Style TargetType="CheckBox">

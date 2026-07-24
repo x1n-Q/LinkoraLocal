@@ -6,7 +6,7 @@ using Forms = System.Windows.Forms;
 
 namespace Linkora.Local;
 
-public partial class App : System.Windows.Application
+public partial class App : System.Windows.Application, IDisposable
 {
     private Mutex? _singleInstanceMutex;
     private Forms.NotifyIcon? _trayIcon;
@@ -79,8 +79,16 @@ public partial class App : System.Windows.Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        _trayIcon?.Dispose();
-        _singleInstanceMutex?.Dispose();
+        Dispose();
         base.OnExit(e);
+    }
+
+    public void Dispose()
+    {
+        _trayIcon?.Dispose();
+        _trayIcon = null;
+        _singleInstanceMutex?.Dispose();
+        _singleInstanceMutex = null;
+        GC.SuppressFinalize(this);
     }
 }

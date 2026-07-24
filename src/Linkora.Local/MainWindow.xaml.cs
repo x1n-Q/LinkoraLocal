@@ -3,17 +3,22 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Linkora.Local.Services;
 
 namespace Linkora.Local;
 
-public partial class MainWindow : Window
+public partial class MainWindow : Window, IDisposable
 {
+    private const int DwmUseImmersiveDarkModeBefore20H1 = 19;
+    private const int DwmUseImmersiveDarkMode = 20;
+
     private readonly LinkoraApiClient _api = new();
     private readonly PortDiscoveryService _discovery = new();
     private readonly CloudflaredService _cloudflared = new();
@@ -27,10 +32,12 @@ public partial class MainWindow : Window
     private DesktopSession? _session;
     private WorkspaceData? _workspace;
     private bool _busy;
+    private bool _disposed;
 
     public MainWindow()
     {
         InitializeComponent();
+        SourceInitialized += (_, _) => EnableDarkTitleBar();
         LocalServicesList.ItemsSource = _localServices;
         ExistingHostnameCombo.ItemsSource = _subdomains;
         DomainPoolCombo.ItemsSource = _pools;
@@ -41,6 +48,37 @@ public partial class MainWindow : Window
             Interval = TimeSpan.FromSeconds(3)
         };
         _devicePollTimer.Tick += DevicePollTimer_Tick;
+    }
+
+    [DllImport("dwmapi.dll", PreserveSig = true)]
+    private static extern int DwmSetWindowAttribute(
+        IntPtr windowHandle,
+        int attribute,
+        ref int attributeValue,
+        int attributeSize);
+
+    private void EnableDarkTitleBar()
+    {
+        var handle = new WindowInteropHelper(this).Handle;
+        var enabled = 1;
+        var size = Marshal.SizeOf(enabled);
+        if (DwmSetWindowAttribute(
+                handle,
+                DwmUseImmersiveDarkMode,
+                ref enabled,
+                size) != 0)
+        {
+            var fallbackResult = DwmSetWindowAttribute(
+                handle,
+                DwmUseImmersiveDarkModeBefore20H1,
+                ref enabled,
+                size);
+            if (fallbackResult != 0)
+            {
+                Debug.WriteLine(
+                    $"Dark title bar is unavailable (HRESULT {fallbackResult}).");
+            }
+        }
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -521,10 +559,21 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        Dispose();
+        base.OnClosed(e);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+        _disposed = true;
         _devicePollTimer.Stop();
         _api.Dispose();
         _discovery.Dispose();
-        _ = _cloudflared.DisposeAsync();
-        base.OnClosed(e);
+        _cloudflared.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        GC.SuppressFinalize(this);
     }
 }
