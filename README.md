@@ -58,20 +58,6 @@ production server.
 See [SECURITY.md](SECURITY.md) and [PRIVACY.md](PRIVACY.md) for the complete
 security and data-handling model.
 
-## Current MVP
-
-- Native, lightweight Windows UI
-- IPv4 localhost listener discovery
-- HTTP and HTTPS health probing
-- Browser-approved Linkora device authorization
-- Existing hostname selection
-- New managed-tunnel hostname creation
-- Secure `cloudflared` process management
-- Public edge health check
-- System tray operation after the editor closes
-- Optional start-with-Windows and automatic managed-tunnel reconnect
-- Immediate stop-sharing and device-disconnect controls
-
 ## Always-on mode
 
 Enable **Always on while this PC is on** before publishing. Linkora Local then:
