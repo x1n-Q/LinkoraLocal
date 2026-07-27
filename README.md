@@ -2,7 +2,7 @@
 
 [![Build](https://github.com/x1n-Q/LinkoraLocal/actions/workflows/build.yml/badge.svg)](https://github.com/x1n-Q/LinkoraLocal/actions/workflows/build.yml)
 [![CodeQL](https://github.com/x1n-Q/LinkoraLocal/actions/workflows/codeql.yml/badge.svg)](https://github.com/x1n-Q/LinkoraLocal/actions/workflows/codeql.yml)
-[![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-32d8ff)](https://github.com/x1n-Q/LinkoraLocal/releases)
+[![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-32d8ff)](https://apps.microsoft.com/detail/9N5RQR772P5P)
 [![License: MIT](https://img.shields.io/badge/License-MIT-c9ff54.svg)](LICENSE)
 
 Publish a localhost website through a short Linkora hostname—without router
@@ -12,15 +12,19 @@ Linkora Local is an open-source Windows application that discovers local HTTP
 services, lets you select one, and connects it through a Linkora-managed
 Cloudflare Tunnel.
 
-**[Download Linkora Local 0.1.0 for Windows](https://github.com/x1n-Q/LinkoraLocal/releases/download/v0.1.0/Linkora-Local-Windows-x64.exe)**
+[![Get it from Microsoft](https://get.microsoft.com/images/en-us%20dark.svg)](https://apps.microsoft.com/detail/9N5RQR772P5P)
+
+**[Install from Microsoft Store](https://apps.microsoft.com/detail/9N5RQR772P5P)**
+· [Manual GitHub Setup download](https://github.com/x1n-Q/LinkoraLocal/releases/download/v0.1.0/Linkora-Local-Windows-x64.exe)
 · [Release notes and checksum](https://github.com/x1n-Q/LinkoraLocal/releases/tag/v0.1.0)
 · [Linkora website](https://linkora.top/#linkora-local)
 · [Manual tunnel guide](https://linkora.top/guides/cloudflare-tunnel)
 
-> **Windows preview:** the current installer is not yet code-signed by
-> Linkora. Windows SmartScreen may display an **Unknown publisher** warning.
-> Verify the published SHA-256 checksum or build the app from this repository
-> before installing.
+The Microsoft Store package is the recommended installation and update path.
+The separate GitHub Setup executable remains available for manual installation;
+because that standalone installer is not code-signed by Linkora, Windows
+SmartScreen may display an **Unknown publisher** warning. Verify its published
+SHA-256 checksum or build the app from source before using that alternative.
 
 ## How it works
 
@@ -156,7 +160,17 @@ Bug reports and focused pull requests are welcome. Read
 [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a change. Report security
 issues privately as described in [SECURITY.md](SECURITY.md).
 
-## Microsoft Store package
+## Microsoft Store
+
+Linkora Local is available free for Windows 10 and Windows 11:
+
+- [Install Linkora Local from Microsoft Store](https://apps.microsoft.com/detail/9N5RQR772P5P)
+- Store product ID: `9N5RQR772P5P`
+
+The Store package is signed and distributed by Microsoft and receives updates
+through Microsoft Store.
+
+### Building a Store package
 
 1. Reserve **Linkora Local** in Microsoft Partner Center.
 2. Copy the package name, publisher, and publisher display name exactly from
