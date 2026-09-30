@@ -22,7 +22,7 @@ function New-LinkoraBitmap {
   $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
   $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
   $graphics.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::ClearTypeGridFit
-  $graphics.Clear([System.Drawing.ColorTranslator]::FromHtml("#050A11"))
+  $graphics.Clear([System.Drawing.ColorTranslator]::FromHtml("#F3F0E7"))
 
   $scale = [Math]::Min($Width, $Height)
   $markSize = [Math]::Max(18, [int]($scale * 0.44))
@@ -30,17 +30,17 @@ function New-LinkoraBitmap {
   $markY = [int](($Height - $markSize) / 2)
   $stroke = [Math]::Max(2, [int]($markSize * 0.09))
 
-  $cyan = [System.Drawing.ColorTranslator]::FromHtml("#38D6F4")
-  $lime = [System.Drawing.ColorTranslator]::FromHtml("#B7FF4A")
-  $white = [System.Drawing.ColorTranslator]::FromHtml("#F5F8FC")
-  $pen = [System.Drawing.Pen]::new($cyan, $stroke)
+  $oxblood = [System.Drawing.ColorTranslator]::FromHtml("#813C42")
+  $olive = [System.Drawing.ColorTranslator]::FromHtml("#8B927B")
+  $charcoal = [System.Drawing.ColorTranslator]::FromHtml("#282B26")
+  $pen = [System.Drawing.Pen]::new($oxblood, $stroke)
   $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Square
   $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Square
   $graphics.DrawLine($pen, $markX, $markY, $markX, $markY + $markSize)
   $graphics.DrawLine($pen, $markX, $markY + $markSize, $markX + $markSize, $markY + $markSize)
   $dotSize = [Math]::Max(5, [int]($markSize * 0.22))
-  $dotBrush = [System.Drawing.SolidBrush]::new([System.Drawing.ColorTranslator]::FromHtml("#050A11"))
-  $dotPen = [System.Drawing.Pen]::new($lime, [Math]::Max(2, [int]($stroke * 0.7)))
+  $dotBrush = [System.Drawing.SolidBrush]::new([System.Drawing.ColorTranslator]::FromHtml("#F3F0E7"))
+  $dotPen = [System.Drawing.Pen]::new($olive, [Math]::Max(2, [int]($stroke * 0.7)))
   $graphics.FillEllipse(
     $dotBrush,
     $markX + $markSize - [int]($dotSize / 2),
@@ -57,7 +57,7 @@ function New-LinkoraBitmap {
   if ($Wordmark) {
     $fontSize = [Math]::Max(14, [int]($Height * 0.20))
     $font = [System.Drawing.Font]::new("Segoe UI", $fontSize, [System.Drawing.FontStyle]::Bold)
-    $textBrush = [System.Drawing.SolidBrush]::new($white)
+    $textBrush = [System.Drawing.SolidBrush]::new($charcoal)
     $graphics.DrawString(
       "linkora local",
       $font,

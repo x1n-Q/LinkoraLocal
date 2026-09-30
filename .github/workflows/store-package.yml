@@ -1,0 +1,64 @@
+name: Store Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      identity_name:
+        description: "Package/Identity name from Partner Center"
+        required: true
+        type: string
+      publisher:
+        description: "Publisher from Partner Center, for example CN=..."
+        required: true
+        type: string
+      publisher_display_name:
+        description: "Publisher display name from Partner Center"
+        required: true
+        type: string
+      version:
+        description: "MSIX version, four parts"
+        required: true
+        default: "0.1.1.0"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  msix:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build and scan source
+        shell: pwsh
+        run: ./scripts/Test-Source.ps1
+
+      - name: Download Cloudflare connector
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts\tools | Out-Null
+          Invoke-WebRequest `
+            -Uri "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe" `
+            -OutFile artifacts\tools\cloudflared.exe
+
+      - name: Build unsigned Store MSIX
+        shell: pwsh
+        run: |
+          ./scripts/Build-MSIX.ps1 `
+            -IdentityName "${{ inputs.identity_name }}" `
+            -Publisher "${{ inputs.publisher }}" `
+            -PublisherDisplayName "${{ inputs.publisher_display_name }}" `
+            -Version "${{ inputs.version }}" `
+            -CloudflaredPath artifacts\tools\cloudflared.exe
+
+      - name: Upload Store package
+        uses: actions/upload-artifact@v4
+        with:
+          name: LinkoraLocal-${{ inputs.version }}-msix
+          path: artifacts/*.msix
+          if-no-files-found: error
