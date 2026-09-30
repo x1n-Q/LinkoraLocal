@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
@@ -25,6 +26,14 @@ public partial class MainWindow : Window, IDisposable
     private readonly ObservableCollection<LocalService> _localServices = [];
     private readonly ObservableCollection<Subdomain> _subdomains = [];
     private readonly ObservableCollection<DomainPool> _pools = [];
+    private readonly ObservableCollection<LocalServicePreset> _smartProfiles =
+    [
+        new("Next.js / Node", 3000, "http", "Common default for Next.js, Express, Remix, and many Node development servers."),
+        new("Vite / React", 5173, "http", "Common default for Vite apps, including React, Vue, Svelte, and vanilla projects."),
+        new("Laravel / PHP", 8000, "http", "Common default for Laravel artisan serve and many PHP local servers."),
+        new("WordPress / Docker", 8080, "http", "Common default for WordPress, Nginx, Apache, and Docker Compose previews."),
+        new("Custom local port", 3000, "http", "Use this when your app runs on a different loopback port.")
+    ];
     private readonly DispatcherTimer _devicePollTimer;
     private readonly DispatcherTimer _resumeTimer;
     private readonly AppPreferences _preferences;
@@ -46,9 +55,14 @@ public partial class MainWindow : Window, IDisposable
         AlwaysOnCheckBox.IsChecked = _preferences.AlwaysOnEnabled;
         _loadingPreferences = false;
         SourceInitialized += (_, _) => EnableDarkTitleBar();
+        DeviceNameText.Text = Environment.MachineName;
         LocalServicesList.ItemsSource = _localServices;
         ExistingHostnameCombo.ItemsSource = _subdomains;
         DomainPoolCombo.ItemsSource = _pools;
+        SmartProfileCombo.ItemsSource = _smartProfiles;
+        SmartProtocolCombo.ItemsSource = new[] { "http", "https" };
+        SmartProfileCombo.SelectedIndex = 0;
+        SmartProtocolCombo.SelectedIndex = 0;
         ApiEnvironmentText.Text = _api.BaseAddress.Host;
         _cloudflared.OutputReceived += HandleCloudflaredOutput;
         _devicePollTimer = new DispatcherTimer
@@ -163,6 +177,7 @@ public partial class MainWindow : Window, IDisposable
         SignedOutPanel.Visibility = Visibility.Collapsed;
         PublishConfigurationPanel.Visibility = Visibility.Visible;
         await LoadWorkspaceAsync();
+        DeviceHealthText.Text = "Connected. Choose a local app and hostname to publish.";
         SetStatus("Account connected securely.", true);
     }
 
@@ -177,6 +192,9 @@ public partial class MainWindow : Window, IDisposable
         SignedOutPanel.Visibility = Visibility.Visible;
         PublishConfigurationPanel.Visibility = Visibility.Collapsed;
         DeviceCodePanel.Visibility = Visibility.Collapsed;
+        DeviceHealthText.Text = "Connect your account to start publishing.";
+        SlotUsageText.Text = "0 / 0";
+        ConnectorStateText.Text = "Idle";
         _devicePollTimer.Stop();
         UpdatePublishButton();
     }
@@ -200,6 +218,7 @@ public partial class MainWindow : Window, IDisposable
         {
             _subdomains.Add(subdomain);
         }
+        SlotUsageText.Text = $"{_subdomains.Count} / {_workspace.Quota}";
         ExistingHostnameCombo.SelectedIndex = _subdomains.Count > 0 ? 0 : -1;
 
         var canCreate = _subdomains.Count < _workspace.Quota;
@@ -232,16 +251,33 @@ public partial class MainWindow : Window, IDisposable
         SetStatus("Scanning loopback services…");
         try
         {
+            var manualServices = _localServices
+                .Where(service => service.ProcessId <= 0)
+                .ToList();
             var services = await _discovery.DiscoverAsync();
             _localServices.Clear();
             foreach (var service in services)
             {
                 _localServices.Add(service);
             }
+            foreach (var manualService in manualServices)
+            {
+                if (_localServices.Any(service =>
+                        service.Port == manualService.Port
+                        && service.Protocol.Equals(
+                            manualService.Protocol,
+                            StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+                _localServices.Add(manualService);
+            }
             if (_localServices.Count > 0)
             {
                 LocalServicesList.Visibility = Visibility.Visible;
                 LocalServicesList.SelectedIndex = 0;
+                DeviceHealthText.Text =
+                    $"{_localServices.Count} local app{(_localServices.Count == 1 ? "" : "s")} ready to publish.";
                 SetStatus(
                     $"{_localServices.Count} local web service{(_localServices.Count == 1 ? "" : "s")} found.",
                     true);
@@ -249,6 +285,7 @@ public partial class MainWindow : Window, IDisposable
             else
             {
                 NoServicesPanel.Visibility = Visibility.Visible;
+                DeviceHealthText.Text = "No local apps detected yet. Start one or use a Smart Publish profile.";
                 SetStatus("No publishable HTTP services were found.");
             }
         }
@@ -268,6 +305,72 @@ public partial class MainWindow : Window, IDisposable
 
     private async void RefreshButton_Click(object sender, RoutedEventArgs e) =>
         await RefreshServicesAsync();
+
+    private void SmartProfileCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (SmartProfileCombo.SelectedItem is not LocalServicePreset preset)
+        {
+            return;
+        }
+
+        SmartPortTextBox.Text = preset.Port.ToString(CultureInfo.InvariantCulture);
+        SmartProtocolCombo.SelectedItem = preset.Protocol;
+        SmartProfileDetailText.Text = preset.Detail;
+        UpdateSmartProfileButton();
+    }
+
+    private void SmartPortTextBox_TextChanged(object sender, TextChangedEventArgs e) =>
+        UpdateSmartProfileButton();
+
+    private void UpdateSmartProfileButton()
+    {
+        if (UseSmartProfileButton is null)
+        {
+            return;
+        }
+        UseSmartProfileButton.IsEnabled = TryReadSmartPort(out _);
+    }
+
+    private bool TryReadSmartPort(out int port)
+    {
+        return int.TryParse(SmartPortTextBox.Text.Trim(), out port)
+               && port is >= 1024 and <= 65535;
+    }
+
+    private void UseSmartProfileButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!TryReadSmartPort(out var port)
+            || SmartProfileCombo.SelectedItem is not LocalServicePreset preset
+            || SmartProtocolCombo.SelectedItem is not string protocol)
+        {
+            SetStatus("Enter a loopback HTTP port from 1024 to 65535.", false, true);
+            return;
+        }
+
+        var existing = _localServices.FirstOrDefault(service =>
+            service.Port == port
+            && service.Protocol.Equals(protocol, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null)
+        {
+            LocalServicesList.SelectedItem = existing;
+            LocalServicesList.ScrollIntoView(existing);
+            SetStatus($"{existing.ServiceUrl} is selected for publishing.", true);
+            return;
+        }
+
+        var service = new LocalService(
+            port,
+            0,
+            "Manual Smart Publish profile",
+            preset.Name == "Custom local port" ? $"Custom app on port {port}" : preset.Name,
+            protocol);
+        _localServices.Add(service);
+        LocalServicesList.Visibility = Visibility.Visible;
+        NoServicesPanel.Visibility = Visibility.Collapsed;
+        LocalServicesList.SelectedItem = service;
+        LocalServicesList.ScrollIntoView(service);
+        SetStatus($"{service.ServiceUrl} is ready to publish.", true);
+    }
 
     private async void ConnectAccountButton_Click(object sender, RoutedEventArgs e)
     {
@@ -419,9 +522,16 @@ public partial class MainWindow : Window, IDisposable
 
     private void LocalServicesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        SelectedServiceText.Text = LocalServicesList.SelectedItem is LocalService service
-            ? service.ServiceUrl
-            : "Select a service on the left";
+        if (LocalServicesList.SelectedItem is LocalService service)
+        {
+            SelectedServiceText.Text = service.ServiceUrl;
+            CurrentTargetText.Text = $"{service.ServiceUrl} · {service.Name}";
+        }
+        else
+        {
+            SelectedServiceText.Text = "Select a service on the left";
+            CurrentTargetText.Text = "No local app selected";
+        }
         UpdatePublishButton();
     }
 
@@ -493,6 +603,7 @@ public partial class MainWindow : Window, IDisposable
         _busy = true;
         PublishButton.IsEnabled = false;
         SetStatus("Preparing the managed tunnel…");
+        ConnectorStateText.Text = "Preparing";
         try
         {
             string hostname;
@@ -545,6 +656,7 @@ public partial class MainWindow : Window, IDisposable
             }
 
             SetStatus("Starting the encrypted connector…");
+            ConnectorStateText.Text = "Starting";
             await _cloudflared.StartAsync(token);
             _publishedUrl = $"https://{hostname}";
             if (_preferences.AlwaysOnEnabled)
@@ -557,12 +669,15 @@ public partial class MainWindow : Window, IDisposable
             PublishedUrlText.Text = _publishedUrl;
             PublishedPanel.Visibility = Visibility.Visible;
             PublishButton.Visibility = Visibility.Collapsed;
+            ConnectorStateText.Text = "Online";
+            DeviceHealthText.Text = "Publishing through a Linkora managed tunnel.";
             SetStatus("Connector started. Waiting for the Cloudflare edge…", true);
             _ = VerifyPublishedUrlAsync(_publishedUrl);
             await LoadWorkspaceAsync();
         }
         catch (Exception exception)
         {
+            ConnectorStateText.Text = _cloudflared.IsRunning ? "Online" : "Needs attention";
             SetStatus(exception.Message, false, true);
         }
         finally
@@ -630,6 +745,10 @@ public partial class MainWindow : Window, IDisposable
             _publishedUrl = null;
             PublishedPanel.Visibility = Visibility.Collapsed;
             PublishButton.Visibility = Visibility.Visible;
+            ConnectorStateText.Text = "Idle";
+            DeviceHealthText.Text = _session is null
+                ? "Connect your account to start publishing."
+                : "Connected. Choose a local app and hostname to publish.";
             SetStatus("Local publishing stopped.");
             UpdatePublishButton();
         });
@@ -701,6 +820,7 @@ public partial class MainWindow : Window, IDisposable
             }
 
             SetStatus("Restoring the always-on encrypted connector…");
+            ConnectorStateText.Text = "Restoring";
             string token;
             if (subdomain.ManagedTunnel is null)
             {
@@ -722,6 +842,8 @@ public partial class MainWindow : Window, IDisposable
             PublishedUrlText.Text = _publishedUrl;
             PublishedPanel.Visibility = Visibility.Visible;
             PublishButton.Visibility = Visibility.Collapsed;
+            ConnectorStateText.Text = "Online";
+            DeviceHealthText.Text = "Always-on publishing restored.";
 
             var matchingService = _localServices.FirstOrDefault(item =>
                 item.ServiceUrl.Equals(
@@ -750,6 +872,7 @@ public partial class MainWindow : Window, IDisposable
         }
         catch (Exception exception)
         {
+            ConnectorStateText.Text = "Retrying";
             SetStatus(
                 $"Automatic reconnect is waiting to retry: {exception.Message}",
                 false,
@@ -807,11 +930,19 @@ public partial class MainWindow : Window, IDisposable
     {
         if (line.Contains("Registered tunnel connection", StringComparison.OrdinalIgnoreCase))
         {
-            Dispatcher.Invoke(() => SetStatus("Secure edge connection established.", true));
+            Dispatcher.Invoke(() =>
+            {
+                ConnectorStateText.Text = "Online";
+                SetStatus("Secure edge connection established.", true);
+            });
         }
         else if (line.Contains("error", StringComparison.OrdinalIgnoreCase))
         {
-            Dispatcher.Invoke(() => SetStatus("The connector reported an error. Retrying automatically."));
+            Dispatcher.Invoke(() =>
+            {
+                ConnectorStateText.Text = "Retrying";
+                SetStatus("The connector reported an error. Retrying automatically.");
+            });
         }
     }
 
@@ -837,7 +968,7 @@ public partial class MainWindow : Window, IDisposable
         StatusText.Text = message;
         StatusDot.Fill = new SolidColorBrush(
             (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(
-                error ? "#FF6B89" : healthy ? "#B7FF4A" : "#7F94B2"));
+                error ? "#C24157" : healthy ? "#8B927B" : "#737669"));
     }
 
     protected override void OnClosed(EventArgs e)

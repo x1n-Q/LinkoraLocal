@@ -5,7 +5,7 @@
         Icon="{StaticResource AppIcon}"
         Width="1080"
         Height="700"
-        MinWidth="880"
+        MinWidth="860"
         MinHeight="580"
         Background="{StaticResource CanvasBrush}"
         Foreground="{StaticResource TextBrush}"
@@ -21,7 +21,7 @@
     </Grid.RowDefinitions>
 
     <Border Grid.Row="0"
-            Background="#070E18"
+            Background="{StaticResource SurfaceBrush}"
             BorderBrush="{StaticResource BorderBrush}"
             BorderThickness="0,0,0,1">
       <Grid Margin="28,0">
@@ -40,7 +40,7 @@
                      Height="7"
                      HorizontalAlignment="Right"
                      VerticalAlignment="Bottom"
-                     Fill="#07101C"
+                     Fill="{StaticResource SurfaceBrush}"
                      Stroke="{StaticResource LimeBrush}"
                      StrokeThickness="2" />
           </Grid>
@@ -48,7 +48,7 @@
             <TextBlock FontSize="18" FontWeight="Bold">
               <Run Text="linkora" /><Run Text="." Foreground="{StaticResource LimeBrush}" />
             </TextBlock>
-            <TextBlock Text="LOCAL PUBLISHER"
+            <TextBlock Text="LOCAL CONNECT"
                        Foreground="{StaticResource CyanBrush}"
                        FontFamily="Cascadia Mono"
                        FontWeight="Bold"
@@ -91,9 +91,9 @@
                   HorizontalScrollBarVisibility="Disabled">
       <Grid Margin="28">
         <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="1.18*" MinWidth="430" />
+          <ColumnDefinition Width="1.16*" MinWidth="410" />
           <ColumnDefinition Width="24" />
-          <ColumnDefinition Width="0.82*" MinWidth="330" />
+          <ColumnDefinition Width="0.84*" MinWidth="340" />
         </Grid.ColumnDefinitions>
 
         <StackPanel Grid.Column="0">
@@ -103,16 +103,16 @@
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel>
-              <TextBlock Text="LOCALHOST FOUND"
+              <TextBlock Text="SMART PUBLISH"
                          Foreground="{StaticResource CyanBrush}"
                          FontFamily="Cascadia Mono"
                          FontWeight="Bold"
                          FontSize="9" />
-              <TextBlock Text="Running services"
+              <TextBlock Text="Publish from this device"
                          Margin="0,7,0,0"
                          FontSize="28"
                          FontWeight="Bold" />
-              <TextBlock Text="Only HTTP services are shown. Database, SSH, and other sensitive ports are excluded."
+              <TextBlock Text="Pick a detected local website or choose a common app profile when discovery misses your port."
                          Margin="0,7,0,0"
                          Foreground="{StaticResource MutedBrush}"
                          TextWrapping="Wrap" />
@@ -159,6 +159,76 @@
             </StackPanel>
           </Border>
 
+          <Border Margin="0,14,0,16"
+                  Padding="18"
+                  CornerRadius="12"
+                  Background="{StaticResource SurfaceBrush}"
+                  BorderBrush="{StaticResource BorderBrush}"
+                  BorderThickness="1">
+            <StackPanel>
+              <TextBlock Text="QUICK PROFILE"
+                         Foreground="{StaticResource CyanBrush}"
+                         FontFamily="Cascadia Mono"
+                         FontWeight="Bold"
+                         FontSize="9" />
+              <TextBlock Text="Use Smart Publish when your app is not listed"
+                         Margin="0,7,0,0"
+                         FontSize="17"
+                         FontWeight="SemiBold" />
+              <TextBlock Text="Choose a common development server or enter a custom loopback port."
+                         Margin="0,6,0,14"
+                         Foreground="{StaticResource MutedBrush}"
+                         TextWrapping="Wrap" />
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="1.1*" />
+                  <ColumnDefinition Width="10" />
+                  <ColumnDefinition Width="0.55*" />
+                  <ColumnDefinition Width="10" />
+                  <ColumnDefinition Width="0.45*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                  <TextBlock Text="APP TYPE"
+                             Foreground="{StaticResource MutedBrush}"
+                             FontFamily="Cascadia Mono"
+                             FontSize="9"
+                             FontWeight="Bold" />
+                  <ComboBox x:Name="SmartProfileCombo"
+                            Margin="0,7,0,0"
+                            SelectionChanged="SmartProfileCombo_SelectionChanged" />
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                  <TextBlock Text="PORT"
+                             Foreground="{StaticResource MutedBrush}"
+                             FontFamily="Cascadia Mono"
+                             FontSize="9"
+                             FontWeight="Bold" />
+                  <TextBox x:Name="SmartPortTextBox"
+                           Margin="0,7,0,0"
+                           MaxLength="5"
+                           TextChanged="SmartPortTextBox_TextChanged" />
+                </StackPanel>
+                <StackPanel Grid.Column="4">
+                  <TextBlock Text="TYPE"
+                             Foreground="{StaticResource MutedBrush}"
+                             FontFamily="Cascadia Mono"
+                             FontSize="9"
+                             FontWeight="Bold" />
+                  <ComboBox x:Name="SmartProtocolCombo"
+                            Margin="0,7,0,0" />
+                </StackPanel>
+              </Grid>
+              <TextBlock x:Name="SmartProfileDetailText"
+                         Margin="0,10,0,14"
+                         Foreground="{StaticResource MutedBrush}"
+                         TextWrapping="Wrap"
+                         FontSize="11" />
+              <Button x:Name="UseSmartProfileButton"
+                      Content="Use this local app"
+                      Click="UseSmartProfileButton_Click" />
+            </StackPanel>
+          </Border>
+
           <ListBox x:Name="LocalServicesList"
                    Background="Transparent"
                    BorderThickness="0"
@@ -182,11 +252,11 @@
                       </Border>
                       <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                          <Setter TargetName="ServiceBorder" Property="BorderBrush" Value="#47708A" />
+                          <Setter TargetName="ServiceBorder" Property="BorderBrush" Value="{StaticResource LimeBrush}" />
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
                           <Setter TargetName="ServiceBorder" Property="BorderBrush" Value="{StaticResource CyanBrush}" />
-                          <Setter TargetName="ServiceBorder" Property="Background" Value="#102433" />
+                          <Setter TargetName="ServiceBorder" Property="Background" Value="#FFF7F2" />
                         </Trigger>
                       </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -205,8 +275,8 @@
                   <Border Width="42"
                           Height="42"
                           CornerRadius="9"
-                          Background="#10283A"
-                          BorderBrush="#28516A"
+                          Background="#F3E4E0"
+                          BorderBrush="{StaticResource BorderBrush}"
                           BorderThickness="1">
                     <TextBlock Text="&gt;_"
                                HorizontalAlignment="Center"
@@ -231,7 +301,7 @@
                                FontWeight="Bold"
                                Foreground="{StaticResource CyanBrush}"
                                TextAlignment="Right" />
-                    <TextBlock Text="READY"
+                    <TextBlock Text="{Binding SourceLabel}"
                                Margin="0,5,0,0"
                                FontFamily="Cascadia Mono"
                                Foreground="{StaticResource LimeBrush}"
@@ -249,7 +319,7 @@
                   Margin="0,0,0,14"
                   Padding="20"
                   CornerRadius="12"
-                  Background="#102433"
+                  Background="#FFF7F2"
                   BorderBrush="{StaticResource CyanBrush}"
                   BorderThickness="1"
                   Visibility="Collapsed">
@@ -275,6 +345,116 @@
             </StackPanel>
           </Border>
 
+          <Border Margin="0,0,0,14"
+                  Padding="20"
+                  CornerRadius="12"
+                  Background="{StaticResource SurfaceBrush}"
+                  BorderBrush="{StaticResource BorderBrush}"
+                  BorderThickness="1">
+            <StackPanel>
+              <TextBlock Text="DEVICE HEALTH"
+                         Foreground="{StaticResource CyanBrush}"
+                         FontFamily="Cascadia Mono"
+                         FontWeight="Bold"
+                         FontSize="9" />
+              <Grid Margin="0,10,0,0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                  <TextBlock x:Name="DeviceNameText"
+                             Text="This computer"
+                             FontSize="18"
+                             FontWeight="Bold" />
+                  <TextBlock x:Name="DeviceHealthText"
+                             Text="Connect your account to start publishing."
+                             Margin="0,5,0,0"
+                             Foreground="{StaticResource MutedBrush}"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+                <Border Grid.Column="1"
+                        Width="44"
+                        Height="44"
+                        CornerRadius="10"
+                        Background="#F3E4E0"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1">
+                  <TextBlock Text="PC"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"
+                             FontFamily="Cascadia Mono"
+                             FontWeight="Bold"
+                             Foreground="{StaticResource CyanBrush}" />
+                </Border>
+              </Grid>
+              <Grid Margin="0,16,0,0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="12" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Padding="12"
+                        CornerRadius="8"
+                        Background="{StaticResource SurfaceRaisedBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1">
+                  <StackPanel>
+                    <TextBlock Text="HOSTNAME SLOTS"
+                               Foreground="{StaticResource MutedBrush}"
+                               FontFamily="Cascadia Mono"
+                               FontSize="8"
+                               FontWeight="Bold" />
+                    <TextBlock x:Name="SlotUsageText"
+                               Text="0 / 0"
+                               Margin="0,5,0,0"
+                               FontSize="18"
+                               FontWeight="Bold" />
+                  </StackPanel>
+                </Border>
+                <Border Grid.Column="2"
+                        Padding="12"
+                        CornerRadius="8"
+                        Background="{StaticResource SurfaceRaisedBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1">
+                  <StackPanel>
+                    <TextBlock Text="CONNECTOR"
+                               Foreground="{StaticResource MutedBrush}"
+                               FontFamily="Cascadia Mono"
+                               FontSize="8"
+                               FontWeight="Bold" />
+                    <TextBlock x:Name="ConnectorStateText"
+                               Text="Idle"
+                               Margin="0,5,0,0"
+                               FontSize="18"
+                               FontWeight="Bold" />
+                  </StackPanel>
+                </Border>
+              </Grid>
+              <Border Margin="0,12,0,0"
+                      Padding="12"
+                      CornerRadius="8"
+                      Background="{StaticResource SurfaceRaisedBrush}"
+                      BorderBrush="{StaticResource BorderBrush}"
+                      BorderThickness="1">
+                <StackPanel>
+                  <TextBlock Text="SELECTED LOCAL APP"
+                             Foreground="{StaticResource MutedBrush}"
+                             FontFamily="Cascadia Mono"
+                             FontSize="8"
+                             FontWeight="Bold" />
+                  <TextBlock x:Name="CurrentTargetText"
+                             Text="No local app selected"
+                             Margin="0,5,0,0"
+                             FontFamily="Cascadia Mono"
+                             Foreground="{StaticResource CyanBrush}"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </Border>
+
           <Border Padding="22"
                   CornerRadius="12"
                   Background="{StaticResource SurfaceBrush}"
@@ -286,11 +466,11 @@
                          FontFamily="Cascadia Mono"
                          FontWeight="Bold"
                          FontSize="9" />
-              <TextBlock Text="Secure preview"
+              <TextBlock Text="Public hostname"
                          Margin="0,8,0,0"
                          FontSize="23"
                          FontWeight="Bold" />
-              <TextBlock Text="No router configuration or public inbound port is required."
+              <TextBlock Text="Publish a selected local app through a Linkora managed tunnel."
                          Margin="0,7,0,18"
                          Foreground="{StaticResource MutedBrush}"
                          TextWrapping="Wrap" />
@@ -298,7 +478,7 @@
               <Border x:Name="SignedOutPanel"
                       Padding="17"
                       CornerRadius="9"
-                      Background="#07101C"
+                      Background="{StaticResource SurfaceRaisedBrush}"
                       BorderBrush="{StaticResource BorderBrush}"
                       BorderThickness="1">
                 <StackPanel>
@@ -320,7 +500,7 @@
                            FontWeight="Bold" />
                 <Border Margin="0,7,0,16"
                         Padding="13"
-                        Background="#07101C"
+                        Background="{StaticResource SurfaceRaisedBrush}"
                         BorderBrush="{StaticResource BorderBrush}"
                         BorderThickness="1"
                         CornerRadius="7">
@@ -386,7 +566,7 @@
                 <Border Margin="0,18,0,0"
                         Padding="14"
                         CornerRadius="8"
-                        Background="#07101C"
+                        Background="{StaticResource SurfaceRaisedBrush}"
                         BorderBrush="{StaticResource BorderBrush}"
                         BorderThickness="1">
                   <Grid>
@@ -415,8 +595,8 @@
                 <Border Margin="0,18,0,16"
                         Padding="14"
                         CornerRadius="8"
-                        Background="#162012"
-                        BorderBrush="#3E5B24"
+                        Background="#F3F0E7"
+                        BorderBrush="{StaticResource LimeBrush}"
                         BorderThickness="1">
                   <Grid>
                     <Grid.ColumnDefinitions>
@@ -428,15 +608,15 @@
                                Foreground="{StaticResource LimeBrush}"
                                FontWeight="Bold" />
                     <TextBlock Grid.Column="1"
-                               Text="Recommended: managed tunnel with no open inbound ports."
-                               Foreground="#C8E8A2"
+                               Text="Recommended: managed tunnel with no router changes or inbound firewall rule."
+                               Foreground="{StaticResource TextBrush}"
                                TextWrapping="Wrap" />
                   </Grid>
                 </Border>
 
                 <Button x:Name="PublishButton"
                         Style="{StaticResource PrimaryButton}"
-                        Content="Publish securely"
+                        Content="Publish from this device"
                         IsEnabled="False"
                         Click="PublishButton_Click" />
 
@@ -445,9 +625,9 @@
                             Visibility="Collapsed">
                   <Border Padding="14"
                           CornerRadius="8"
-                          BorderBrush="#426526"
+                          BorderBrush="{StaticResource LimeBrush}"
                           BorderThickness="1"
-                          Background="#14200F">
+                          Background="#F3F0E7">
                     <StackPanel>
                       <TextBlock Text="ONLINE"
                                  Foreground="{StaticResource LimeBrush}"
@@ -483,7 +663,7 @@
     </ScrollViewer>
 
     <Border Grid.Row="2"
-            Background="#070E18"
+            Background="{StaticResource SurfaceBrush}"
             BorderBrush="{StaticResource BorderBrush}"
             BorderThickness="0,1,0,0">
       <Grid Margin="28,0">

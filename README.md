@@ -9,8 +9,8 @@ Publish a localhost website through a short Linkora hostname—without router
 port forwarding or a public inbound firewall rule.
 
 Linkora Local is an open-source Windows application that discovers local HTTP
-services, lets you select one, and connects it through a Linkora-managed
-Cloudflare Tunnel.
+services, lets you pick a Smart Publish profile when discovery misses a port,
+and connects the selected app through a Linkora-managed Cloudflare Tunnel.
 
 [![Get it from Microsoft](https://get.microsoft.com/images/en-us%20dark.svg)](https://apps.microsoft.com/detail/9N5RQR772P5P)
 
@@ -29,21 +29,37 @@ SHA-256 checksum or build the app from source before using that alternative.
 ## How it works
 
 ```text
-Localhost found        Select a hostname       Publish securely
-127.0.0.1:3318    →    portfolio.nx1.lol  →    Cloudflare edge
+Local app selected      Select a hostname       Publish from this device
+127.0.0.1:5173     →    portfolio.nx1.lol  →    Cloudflare edge
 ```
 
 1. Install and open Linkora Local on Windows.
 2. Start your website on `localhost`.
 3. Choose **Connect account**. Approval happens on `linkora.top` in your
    browser; your password never enters the desktop app.
-4. Select the detected local service and an available Linkora hostname.
-5. Choose **Publish securely**.
+4. Select a detected local service or choose a Smart Publish profile such as
+   Next.js, Vite, Laravel, WordPress/Docker, or a custom loopback port.
+5. Select an available Linkora hostname.
+6. Choose **Publish from this device**.
 
 The public hostname remains reachable while the local website, Linkora Local,
 and the computer are running. This is intended for development, previews, home
 labs, and self-hosted services—not as a replacement for an always-running
 production server.
+
+## Smart Publish
+
+Smart Publish gives beginners a fallback when automatic discovery does not find
+their app. The app includes profiles for common local development ports:
+
+- Next.js / Node: `http://127.0.0.1:3000`
+- Vite / React: `http://127.0.0.1:5173`
+- Laravel / PHP: `http://127.0.0.1:8000`
+- WordPress / Docker: `http://127.0.0.1:8080`
+- Custom local port: any safe loopback HTTP or HTTPS port from 1024 to 65535
+
+The selected target appears in the device health card before publishing, so the
+user can confirm exactly what will be exposed through the managed tunnel.
 
 ## Trust model
 

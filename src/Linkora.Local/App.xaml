@@ -3,14 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnExplicitShutdown">
   <Application.Resources>
-    <Color x:Key="CanvasColor">#050A11</Color>
-    <Color x:Key="SurfaceColor">#0A1422</Color>
-    <Color x:Key="SurfaceRaisedColor">#0D1929</Color>
-    <Color x:Key="BorderColor">#203149</Color>
-    <Color x:Key="CyanColor">#38D6F4</Color>
-    <Color x:Key="LimeColor">#B7FF4A</Color>
-    <Color x:Key="TextColor">#F5F8FC</Color>
-    <Color x:Key="MutedColor">#7F94B2</Color>
+    <Color x:Key="CanvasColor">#F3F0E7</Color>
+    <Color x:Key="SurfaceColor">#FBFAF4</Color>
+    <Color x:Key="SurfaceRaisedColor">#FFFFFF</Color>
+    <Color x:Key="BorderColor">#D8D6CC</Color>
+    <Color x:Key="CyanColor">#813C42</Color>
+    <Color x:Key="LimeColor">#8B927B</Color>
+    <Color x:Key="TextColor">#282B26</Color>
+    <Color x:Key="MutedColor">#737669</Color>
     <SolidColorBrush x:Key="CanvasBrush" Color="{StaticResource CanvasColor}" />
     <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
     <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="{StaticResource SurfaceRaisedColor}" />
@@ -23,14 +23,14 @@
     <DrawingImage x:Key="AppIcon">
       <DrawingImage.Drawing>
         <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
-          <GeometryDrawing Brush="#07101C" Geometry="M0,0 H32 V32 H0 Z" />
+          <GeometryDrawing Brush="#F3F0E7" Geometry="M0,0 H32 V32 H0 Z" />
           <GeometryDrawing Geometry="M8,6 V23 H22">
             <GeometryDrawing.Pen>
               <Pen Brush="{StaticResource CyanBrush}" Thickness="3"
                    StartLineCap="Square" EndLineCap="Square" LineJoin="Miter" />
             </GeometryDrawing.Pen>
           </GeometryDrawing>
-          <GeometryDrawing Brush="#07101C">
+          <GeometryDrawing Brush="#F3F0E7">
             <GeometryDrawing.Geometry>
               <EllipseGeometry Center="23,23" RadiusX="4" RadiusY="4" />
             </GeometryDrawing.Geometry>
@@ -89,24 +89,24 @@
     </Style>
 
     <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-      <Setter Property="Foreground" Value="#031016" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
       <Setter Property="Background" Value="{StaticResource CyanBrush}" />
       <Setter Property="BorderBrush" Value="{StaticResource CyanBrush}" />
     </Style>
 
     <Style TargetType="TextBox">
       <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-      <Setter Property="Background" Value="#07101C" />
+      <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}" />
       <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="Padding" Value="12,10" />
       <Setter Property="CaretBrush" Value="{StaticResource CyanBrush}" />
-      <Setter Property="SelectionBrush" Value="#4050BDD4" />
+      <Setter Property="SelectionBrush" Value="#40813C42" />
     </Style>
 
     <Style TargetType="ComboBox">
       <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-      <Setter Property="Background" Value="#07101C" />
+      <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}" />
       <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="Padding" Value="10,8" />
@@ -190,7 +190,7 @@
             </Grid>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="ComboBorder" Property="BorderBrush" Value="#47708A" />
+                <Setter TargetName="ComboBorder" Property="BorderBrush" Value="{StaticResource LimeBrush}" />
               </Trigger>
               <Trigger Property="IsKeyboardFocusWithin" Value="True">
                 <Setter TargetName="ComboBorder" Property="BorderBrush" Value="{StaticResource CyanBrush}" />
@@ -223,10 +223,10 @@
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsHighlighted" Value="True">
-                <Setter TargetName="ItemBorder" Property="Background" Value="#13283A" />
+                <Setter TargetName="ItemBorder" Property="Background" Value="#F3F0E7" />
               </Trigger>
               <Trigger Property="IsSelected" Value="True">
-                <Setter TargetName="ItemBorder" Property="Background" Value="#123246" />
+                <Setter TargetName="ItemBorder" Property="Background" Value="#EFE4DF" />
                 <Setter Property="Foreground" Value="{StaticResource CyanBrush}" />
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
@@ -255,7 +255,7 @@
                       Height="16"
                       HorizontalAlignment="Left"
                       VerticalAlignment="Center"
-                      Background="#07101C"
+                      Background="{StaticResource SurfaceRaisedBrush}"
                       BorderBrush="{StaticResource BorderBrush}"
                       BorderThickness="1"
                       CornerRadius="3">
@@ -263,7 +263,7 @@
                            Text="&#x2713;"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
-                           Foreground="#031016"
+                           Foreground="#FFFFFF"
                            FontSize="12"
                            FontWeight="Bold"
                            Visibility="Collapsed" />

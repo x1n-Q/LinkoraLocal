@@ -11,7 +11,14 @@ public sealed record LocalService(
 {
     public string ServiceUrl => $"{Protocol}://127.0.0.1:{Port}";
     public string PortLabel => $"localhost:{Port}";
-    public string ProcessLabel => $"{ProcessName} · PID {ProcessId}";
+    public string ProcessLabel => ProcessId > 0 ? $"{ProcessName} · PID {ProcessId}" : ProcessName;
+    public string SourceLabel => ProcessId > 0 ? "Detected" : "Smart profile";
+}
+
+public sealed record LocalServicePreset(string Name, int Port, string Protocol, string Detail)
+{
+    public string PortLabel => $"{Protocol}://127.0.0.1:{Port}";
+    public override string ToString() => Name;
 }
 
 public sealed class ApiEnvelope<T>
